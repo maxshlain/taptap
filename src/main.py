@@ -1,46 +1,40 @@
-import keyboard
+from pynput import keyboard
 import time
 
-# The last word typed
-last_word = ""
+last_caps_lock_press_time = 0
+double_press_interval = 0.5  # seconds
 
-# The time the last caps lock was pressed
-last_caps_time = 0
+def on_release(key):
+    global last_caps_lock_press_time
+    if key == keyboard.Key.esc:
+        # Stop listener
+        return False
+    if key == keyboard.Key.caps_lock:
+        current_time = time.time()
 
-def reset_last_word():
-    global last_word
-    last_word = ""
+        if last_caps_lock_press_time == 0:
+            last_caps_lock_press_time = current_time
+            return True
 
-def check_caps_lock_press(event):
-    global last_caps_time
-    if time.time() - last_caps_time < 0.5:
-        delete_last_word()
-        type_translated_word()
+        current_interval = current_time - last_caps_lock_press_time
+        if current_interval > double_press_interval:
+            last_caps_lock_press_time = current_time
+            return True
 
-def delete_last_word():
-    global last_word
-    keyboard.send('backspace', repeat=len(last_word))
+        if last_caps_lock_press_time != 0 and current_interval < double_press_interval:
+            print(f"Double {current_interval} Caps lock pressed")
+            last_caps_lock_press_time = current_time # Reset to avoid triple press detection
+        return True
 
-def type_translated_word():
-    print("Type the translated word")
+    # print('{0} released'.format(key))
 
-def on_key(event):
-    print(event)
-    if event.name == 'space':
-        print("If the key is space, reset the last word")
-        reset_last_word()
-        return
-    
-    if event.name == 'caps lock' and event.event_type == 'down':
-        check_caps_lock_press(event)
-        return
-    
-    if event.event_type == 'down':
-        print("If the key is down, add the key to the last word")
-        add_key_to_last_word(event)
+# Collect events until released
+with keyboard.Listener(
+        on_release=on_release) as listener:
+    listener.join()
 
-if __name__ == "__main__":    
-    # Start listening to keyboard events
-    keyboard.hook(on_key)
-    print("Listening to keyboard events")
-    keyboard.wait()
+# # ...or, in a non-blocking fashion:
+# listener = keyboard.Listener(
+#     on_press=on_press,
+#     on_release=on_release)
+# listener.start()
