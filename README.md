@@ -27,4 +27,4 @@ This project requires Python 3.6 or higher. If you don't have Python installed, 
 brew install uv
 uv venv  # Create a virtual environment at .venv.
 source .venv/bin/activate
-uv pip install keyboard
+uv pip install keyboard colorlog
