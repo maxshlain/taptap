@@ -11,7 +11,7 @@ logging.basicConfig(
     datefmt='%Y-%m-%d %H:%M:%S'
 )
 
-last_caps_lock_press_time = -1
+last_caps_lock_press_time = 0
 double_press_interval = 500  # milliseconds
 max_keystrokes = 999
 keystrokes = []
@@ -45,7 +45,8 @@ def on_signal(key):
 
     if last_caps_lock_press_time != 0 and current_interval < double_press_interval:
         last_caps_lock_press_time = time.time()
-        log_last_word()
+        last_word = log_last_word()
+        logging.info(f"last_word: {last_word}")
         # listen_mode = "processing"
         # switch_layout()
         # clear_signal_sequence()
@@ -90,82 +91,44 @@ def log_last_word():
 
     last_word_text = ''
     i = len(keystrokes) - 1
-    last_whitespace_index = -1
     first_whitespace_index = -1
+    non_space_seen = False
     while i >= 0:
         next_key = keystrokes[i]
         i -= 1
 
-        # next_char = get_char(next_key)
-        # if not next_char:
-        #     last_whitespace_index = -1
-        #     continue
+        next_char = get_char(next_key)
+        if next_char:
+            non_space_seen = True
 
         if next_key == keyboard.Key.space or next_key == keyboard.Key.enter:
-            if last_whitespace_index == -1:
-                last_whitespace_index = i+1
-            else:
-                first_whitespace_index = len(keystrokes) - i - 1
-                break
-    # end while
+            if first_whitespace_index == -1:
+                first_whitespace_index = i + 1
+                if non_space_seen:
+                    break
 
-    if last_whitespace_index == -1 and first_whitespace_index == -1:
-        for keystroke in keystrokes:
-            last_word_text += get_char(keystroke)
-        logging.info(f"last_word_text: {last_word_text}")
-        return
-    
+    # end while
+    result_keystrokes = []
     if first_whitespace_index == -1:
-        i = last_whitespace_index
-        while i < len(keystrokes):
-            next_key = keystrokes[i]
-            i += 1
-            next_char = get_char(next_key)
+        for keystroke in keystrokes:
+            next_char = get_char(keystroke)
             if next_char:
-                last_word_text += get_char(next_key)
+                last_word_text += get_char(keystroke)
+                result_keystrokes.append(keystroke)
         logging.info(f"last_word_text: {last_word_text}")
-        return
+        return result_keystrokes
     
     i = first_whitespace_index
-    while i < last_whitespace_index:
+    while i < len(keystrokes):
         next_key = keystrokes[i]
         i += 1
-
-        last_word_text += get_char(next_key)
-    # end while
-
+        next_char = get_char(next_key)
+        if next_char:
+            last_word_text += get_char(next_key)
+            result_keystrokes.append(next_key)
     logging.info(f"last_word_text: {last_word_text}")
-
-
-# def scan_last_word():
-#     if(len(keystrokes) < 2):
-#         return False
-#     word_array = []
-#     i = len(keystrokes) - 1
-#     while i >= 0:
-#         next_key = keystrokes[i]
-#         i -= 1
-#         next_char = get_char(next_key)
-#         if not next_char:
-#             continue
-
-#         if next_key == keyboard.Key.space or next_key == keyboard.Key.enter:
-#             if len(word_array)>0:
-#                 last_word_keystrokes.clear()
-#                 last_word_keystrokes.append(word_array)
-#                 return True
-#             else:
-#                 continue
-
-#         word_array.insert(0, next_key)
-#     # end while
-#     if len(word_array)>0:
-#         last_word_keystrokes.clear()
-#         last_word_keystrokes.append(word_array)
-#         return True
+    return result_keystrokes
     
-#     return False
-
 def record_keystroke(key):
     keystrokes.append(key)
     if len(keystrokes) >= max_keystrokes:
