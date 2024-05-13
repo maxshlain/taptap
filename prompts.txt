@@ -1,0 +1,1 @@
+please modify your solution so every time a key is released, it will log all keys recorded since the program was started. no need to give me explanations, just print the code
