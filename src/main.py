@@ -12,13 +12,38 @@ logging.basicConfig(
 )
 
 last_caps_lock_press_time = 0
-double_press_interval = 500  # milliseconds
+double_press_interval = 999  # milliseconds
 max_keystrokes = 999
 keystrokes = []
 last_word_keystrokes = []
+keyboard_controller = keyboard.Controller()
+
+def delete_before_type_in_next_layout(count):
+    i = 0
+    while i < count:
+        i += 1
+        keyboard_controller.press(keyboard.Key.backspace)
+        keyboard_controller.release(keyboard.Key.backspace)
+        time.sleep(0.2)
+
+def type_in_next_layout(word):
+    for key in word:
+        keyboard_controller.press(key)
+        keyboard_controller.release(key)
+        time.sleep(0.2)
+
+def switch_layout():
+    keyboard_controller.press(keyboard.Key.ctrl)
+    keyboard_controller.press(keyboard.Key.shift)
+    keyboard_controller.press(keyboard.Key.alt)
+    keyboard_controller.press(keyboard.Key.space)
+    keyboard_controller.release(keyboard.Key.space)
+    keyboard_controller.release(keyboard.Key.alt)
+    keyboard_controller.release(keyboard.Key.shift)
+    keyboard_controller.release(keyboard.Key.ctrl)
 
 def is_signal_key(key):
-    return key == keyboard.Key.caps_lock
+    return key == keyboard.Key.ctrl_l
 
 def milliseconds_since_last_signal(last_caps_lock_press_time):
     interval = (time.time() - last_caps_lock_press_time) * 1000
@@ -32,10 +57,6 @@ def on_signal(key):
     if last_caps_lock_press_time == 0:
         last_caps_lock_press_time = time.time()
         return
-        
-    if count_pressed_chars_since_last_whitespace() == 0:
-        last_caps_lock_press_time = time.time()
-        return
 
     current_interval = milliseconds_since_last_signal(last_caps_lock_press_time)
     if current_interval > double_press_interval:
@@ -45,15 +66,11 @@ def on_signal(key):
 
     if last_caps_lock_press_time != 0 and current_interval < double_press_interval:
         last_caps_lock_press_time = time.time()
-        last_word = log_last_word()
+        last_word = get_last_word()
         logging.info(f"last_word: {last_word}")
-        # listen_mode = "processing"
-        # switch_layout()
-        # clear_signal_sequence()
-        # delete_before_type_in_next_layout()
-        # clear_signal_sequence()
-        # type_in_next_layout()
-        # listen_mode = "listening"
+        switch_layout()
+        delete_before_type_in_next_layout(len(last_word))
+        type_in_next_layout(last_word)
 
     return True
 
@@ -83,7 +100,7 @@ def count_pressed_chars_since_last_whitespace():
     # end while
     return len(keystrokes)
 
-def log_last_word():
+def get_last_word():
 
     if len(keystrokes) < 1:
         logging.info("No keystrokes to log")
@@ -102,12 +119,10 @@ def log_last_word():
             non_space_seen = True
 
         if next_key == keyboard.Key.space or next_key == keyboard.Key.enter:
-            if first_whitespace_index == -1:
+            if non_space_seen and first_whitespace_index == -1:
                 first_whitespace_index = i + 1
-                if non_space_seen:
-                    break
-
     # end while
+
     result_keystrokes = []
     if first_whitespace_index == -1:
         for keystroke in keystrokes:
@@ -134,14 +149,9 @@ def record_keystroke(key):
     if len(keystrokes) >= max_keystrokes:
         keystrokes.pop(0)
 
-def log_keystrokes(key):
-    for keystroke in last_word_keystrokes:
-        logging.info(keystroke)
-
-def on_release(key):
+def on_release_impl(key):
 
     if key == keyboard.Key.esc:
-        # Stop listener
         return False
     
     if is_signal_key(key):
@@ -150,11 +160,22 @@ def on_release(key):
     
     record_keystroke(key)
 
+def on_release(key):
+    try:
+        return on_release_impl(key)
+    except Exception as e:
+        logging.error(f"Error: {e}")
+    return True
+
 def main():
     # Collect events until released
     with keyboard.Listener(on_release=on_release) as listener:
         listener.join()
 
 if __name__ == "__main__":
-    logging.info('')
-    main()
+    logging.info('start listending on ctrl_l')
+    try:
+        main()
+        logging.info('end listending on ctrl_l')
+    except Exception as e:
+        logging.error(f"Error: {e}")
