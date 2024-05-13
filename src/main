@@ -1,3 +1,4 @@
+import time
 import logging
 from pynput import keyboard
 
@@ -10,12 +11,181 @@ logging.basicConfig(
     datefmt='%Y-%m-%d %H:%M:%S'
 )
 
-# List to store all keystrokes
+last_caps_lock_press_time = -1
+double_press_interval = 500  # milliseconds
+max_keystrokes = 999
 keystrokes = []
+last_word_keystrokes = []
+
+def is_signal_key(key):
+    return key == keyboard.Key.caps_lock
+
+def milliseconds_since_last_signal(last_caps_lock_press_time):
+    interval = (time.time() - last_caps_lock_press_time) * 1000
+    return int(interval)
+
+def on_signal(key):
+    global last_caps_lock_press_time
+
+    logging.info(f"Signal received: {key}")
+
+    if last_caps_lock_press_time == 0:
+        last_caps_lock_press_time = time.time()
+        return
+        
+    if count_pressed_chars_since_last_whitespace() == 0:
+        last_caps_lock_press_time = time.time()
+        return
+
+    current_interval = milliseconds_since_last_signal(last_caps_lock_press_time)
+    if current_interval > double_press_interval:
+        logging.info(f"too big interval: {current_interval}")
+        last_caps_lock_press_time = time.time()
+        return
+
+    if last_caps_lock_press_time != 0 and current_interval < double_press_interval:
+        last_caps_lock_press_time = time.time()
+        log_last_word()
+        # listen_mode = "processing"
+        # switch_layout()
+        # clear_signal_sequence()
+        # delete_before_type_in_next_layout()
+        # clear_signal_sequence()
+        # type_in_next_layout()
+        # listen_mode = "listening"
+
+    return True
+
+def get_char(key):
+    try:
+        return key.char
+    except AttributeError:
+        return None
+
+def count_pressed_chars_since_last_whitespace():
+    i = len(keystrokes) - 1
+    last_whitespace_index = -1
+    while i >= 0:
+        next_key = keystrokes[i]
+        i -= 1
+
+        next_char = get_char(next_key)
+        if not next_char:
+            last_whitespace_index = -1
+            continue
+
+        if next_key == keyboard.Key.space or next_key == keyboard.Key.enter:
+            if last_whitespace_index == -1:
+                last_whitespace_index = i
+            else:
+                return len(keystrokes) - i - 1
+    # end while
+    return len(keystrokes)
+
+def log_last_word():
+
+    if len(keystrokes) < 1:
+        logging.info("No keystrokes to log")
+        return
+
+    last_word_text = ''
+    i = len(keystrokes) - 1
+    last_whitespace_index = -1
+    first_whitespace_index = -1
+    while i >= 0:
+        next_key = keystrokes[i]
+        i -= 1
+
+        # next_char = get_char(next_key)
+        # if not next_char:
+        #     last_whitespace_index = -1
+        #     continue
+
+        if next_key == keyboard.Key.space or next_key == keyboard.Key.enter:
+            if last_whitespace_index == -1:
+                last_whitespace_index = i+1
+            else:
+                first_whitespace_index = len(keystrokes) - i - 1
+                break
+    # end while
+
+    if last_whitespace_index == -1 and first_whitespace_index == -1:
+        for keystroke in keystrokes:
+            last_word_text += get_char(keystroke)
+        logging.info(f"last_word_text: {last_word_text}")
+        return
+    
+    if first_whitespace_index == -1:
+        i = last_whitespace_index
+        while i < len(keystrokes):
+            next_key = keystrokes[i]
+            i += 1
+            next_char = get_char(next_key)
+            if next_char:
+                last_word_text += get_char(next_key)
+        logging.info(f"last_word_text: {last_word_text}")
+        return
+    
+    i = first_whitespace_index
+    while i < last_whitespace_index:
+        next_key = keystrokes[i]
+        i += 1
+
+        last_word_text += get_char(next_key)
+    # end while
+
+    logging.info(f"last_word_text: {last_word_text}")
+
+
+# def scan_last_word():
+#     if(len(keystrokes) < 2):
+#         return False
+#     word_array = []
+#     i = len(keystrokes) - 1
+#     while i >= 0:
+#         next_key = keystrokes[i]
+#         i -= 1
+#         next_char = get_char(next_key)
+#         if not next_char:
+#             continue
+
+#         if next_key == keyboard.Key.space or next_key == keyboard.Key.enter:
+#             if len(word_array)>0:
+#                 last_word_keystrokes.clear()
+#                 last_word_keystrokes.append(word_array)
+#                 return True
+#             else:
+#                 continue
+
+#         word_array.insert(0, next_key)
+#     # end while
+#     if len(word_array)>0:
+#         last_word_keystrokes.clear()
+#         last_word_keystrokes.append(word_array)
+#         return True
+    
+#     return False
+
+def record_keystroke(key):
+    keystrokes.append(key)
+    if len(keystrokes) >= max_keystrokes:
+        keystrokes.pop(0)
+
+def log_keystrokes(key):
+    for keystroke in last_word_keystrokes:
+        logging.info(keystroke)
 
 def on_release(key):
-    keystrokes.append(key)
-    logging.info(f'Keys recorded: {", ".join(keystrokes)}')
+
+    if key == keyboard.Key.esc:
+        # Stop listener
+        return False
+    
+    if is_signal_key(key):
+        on_signal(key)
+        return True
+    
+    record_keystroke(key)
 
 def main():
     # Collect events until released
@@ -23,4 +193,5 @@ def main():
         listener.join()
 
 if __name__ == "__main__":
+    logging.info('')
     main()
