@@ -1,6 +1,8 @@
-from pynput import keyboard 
-import logging
+# pylint: disable=missing-module-docstring
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
 import time
+from pynput import keyboard
 
 class TapTap:
     def __init__(self):
@@ -16,7 +18,7 @@ class TapTap:
         time.sleep(0.2)
 
     def delete_before_type_in_next_layout(self, count):
-        for i in range(count):
+        for _ in range(count):
             self.tap_and_delay(keyboard.Key.backspace)
     # end def
 
@@ -45,7 +47,7 @@ class TapTap:
         return int(interval)
     # end def
 
-    def on_signal(self, key):
+    def on_signal(self):
         if self.last_caps_lock_press_time == 0:
             self.last_caps_lock_press_time = time.time()
             return
@@ -124,7 +126,7 @@ class TapTap:
             return False
 
         if self.is_signal_key(key):
-            self.on_signal(key)
+            self.on_signal()
             return True
 
         self.record_keystroke(key)
