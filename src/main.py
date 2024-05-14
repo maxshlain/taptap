@@ -2,7 +2,6 @@ import time
 import logging
 from pynput import keyboard
 
-# Setup logging
 logging.basicConfig(
     filename='keystrokes.log', 
     level=logging.INFO, 
@@ -52,22 +51,18 @@ def milliseconds_since_last_signal(last_caps_lock_press_time):
 def on_signal(key):
     global last_caps_lock_press_time
 
-    logging.info(f"Signal received: {key}")
-
     if last_caps_lock_press_time == 0:
         last_caps_lock_press_time = time.time()
         return
 
     current_interval = milliseconds_since_last_signal(last_caps_lock_press_time)
     if current_interval > double_press_interval:
-        logging.info(f"too big interval: {current_interval}")
         last_caps_lock_press_time = time.time()
         return
 
     if last_caps_lock_press_time != 0 and current_interval < double_press_interval:
         last_caps_lock_press_time = time.time()
         last_word = get_last_word()
-        logging.info(f"last_word: {last_word}")
         switch_layout()
         delete_before_type_in_next_layout(len(last_word))
         type_in_next_layout(last_word)
@@ -103,7 +98,6 @@ def count_pressed_chars_since_last_whitespace():
 def get_last_word():
 
     if len(keystrokes) < 1:
-        logging.info("No keystrokes to log")
         return
 
     last_word_text = ''
@@ -130,7 +124,6 @@ def get_last_word():
             if next_char:
                 last_word_text += get_char(keystroke)
                 result_keystrokes.append(keystroke)
-        logging.info(f"last_word_text: {last_word_text}")
         return result_keystrokes
     
     i = first_whitespace_index
@@ -141,7 +134,6 @@ def get_last_word():
         if next_char:
             last_word_text += get_char(next_key)
             result_keystrokes.append(next_key)
-    logging.info(f"last_word_text: {last_word_text}")
     return result_keystrokes
     
 def record_keystroke(key):
