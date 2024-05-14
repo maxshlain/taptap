@@ -15,15 +15,13 @@ class TapTap:
         i = 0
         while i < count:
             i += 1
-            self.keyboard_controller.press(keyboard.Key.backspace)
-            self.keyboard_controller.release(keyboard.Key.backspace)
+            self.keyboard_controller.tap(keyboard.Key.backspace)
             time.sleep(0.2)
     # end def
 
     def type_in_next_layout(self, word):
         for key in word:
-            self.keyboard_controller.press(key)
-            self.keyboard_controller.release(key)
+            self.keyboard_controller.tap(key)
             time.sleep(0.2)
         # end for
     # end def
