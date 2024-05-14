@@ -11,18 +11,20 @@ class TapTap:
         self.last_word_keystrokes = []
         self.keyboard_controller = keyboard.Controller()
 
+    def tap_and_delay(self, key):
+        self.keyboard_controller.tap(key)
+        time.sleep(0.2)
+
     def delete_before_type_in_next_layout(self, count):
         i = 0
         while i < count:
             i += 1
-            self.keyboard_controller.tap(keyboard.Key.backspace)
-            time.sleep(0.2)
+            self.tap_and_delay(keyboard.Key.backspace)
     # end def
 
     def type_in_next_layout(self, word):
         for key in word:
-            self.keyboard_controller.tap(key)
-            time.sleep(0.2)
+            self.tap_and_delay(key)
         # end for
     # end def
 
