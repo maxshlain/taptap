@@ -75,7 +75,7 @@ class TapTap:
     def get_last_word(self):
 
         if len(self.keystrokes) < 1:
-            return
+            return []
 
         last_word_text = ''
         i = len(self.keystrokes) - 1
