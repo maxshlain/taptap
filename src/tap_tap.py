@@ -16,16 +16,13 @@ class TapTap:
         time.sleep(0.2)
 
     def delete_before_type_in_next_layout(self, count):
-        i = 0
-        while i < count:
-            i += 1
+        for i in range(count):
             self.tap_and_delay(keyboard.Key.backspace)
     # end def
 
     def type_in_next_layout(self, word):
         for key in word:
             self.tap_and_delay(key)
-        # end for
     # end def
 
     def switch_layout(self):

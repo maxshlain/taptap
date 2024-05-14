@@ -3,7 +3,7 @@ from pynput import keyboard
 from tap_tap import TapTap
 
 logging.basicConfig(
-    filename='keystrokes.log', 
+    filename='tap_tap.log', 
     level=logging.DEBUG, 
     filemode='w',
     format='%(asctime)s - %(levelname)s - %(message)s',
